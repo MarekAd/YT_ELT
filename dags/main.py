@@ -1,7 +1,14 @@
 from airflow import DAG
 import pendulum
 from datetime import datetime, timedelta
-from api.video_stats import get_playlists_id, get_video_ids, extract_video_data, save_to_json
+from dags.api.api.video_stats import (
+    get_playlists_id,
+    get_video_ids,
+    extract_video_data,
+    save_to_json
+)
+
+from datawarehouse.dwh import staging_table, core_table
 
 # Define the local timezone
 local_tz = pendulum.timezone("Europe/Warsaw")
