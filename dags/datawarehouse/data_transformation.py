@@ -1,4 +1,7 @@
 from datetime import timedelta
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO) 
 
 def parse_duration(duration_str: str) -> timedelta:
     if not duration_str.startswith("P"):
@@ -28,7 +31,14 @@ def transform_data(row):
     duration_td = parse_duration(row['Duration'])
     total_sec = duration_td.total_seconds()
     
-    row['Duration'] = total_sec
+    # row['Duration'] = total_sec
+
+    hours, remainder = divmod(total_sec, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    row['Duration'] = f"{hours:02}:{minutes:02}:{seconds:02}"  # np. '00:00:37'
+
+    logger.info(f" transform_data duration: {total_sec}")
+
     row['Video_Type'] = 'Shorts' if total_sec <= 60 else 'Normal'
 
     return row
