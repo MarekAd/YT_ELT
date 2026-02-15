@@ -8,12 +8,14 @@ import logging
 from airflow.decorators import task
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO) 
+
 table = "yt_api"
 
 @task
 def staging_table():
 
-    schema = 'stagging'
+    schema = 'staging'
 
     conn,cur = None, None
 
@@ -22,12 +24,30 @@ def staging_table():
 
         YT_data = load_data()
 
-        create_chema(schema)
-        create_table(schema)
+        # cur.execute(f'DROP TABLE IF EXISTS staging.{table} CASCADE;')
+        # conn.commit()
+        # logger.info("Dropped table staging.%s if it existed", table)
 
-        table_ids = get_video_ids(cur,schema)
+        # Tworzymy schemat i tabelę jeśli nie istnieje
+        create_chema('staging')
+        create_table('staging', table)
+
+        # # Teraz możemy sprawdzić kolumny
+        # cur.execute("""
+        #     SELECT column_name, data_type
+        #     FROM information_schema.columns
+        #     WHERE table_schema = %s
+        #     AND table_name = %s
+        #     ORDER BY ordinal_position;
+        # """, ('staging', table))
+
+        # columns = cur.fetchall()
+        # logger.info("Columns in table '%s.%s': %s", 'staging', table, columns)
+
+        table_ids = get_video_ids(cur,schema,table)
 
         for row in YT_data:
+            # logger.info("Row to insert into %s: %s", schema, row)
 
             if len(table_ids) == 0:
                 insert_rows(cur,conn,schema,row)
@@ -57,7 +77,6 @@ def staging_table():
         if conn and cur:
             close_conn_cursor(conn, cur)
 
-
 @task
 def core_table():
 
@@ -68,12 +87,17 @@ def core_table():
     try: 
         conn, cur = get_conn_cursor()
 
-        YT_data = load_data()
+        # YT_data = load_data()
+
+        # cur.execute(f'DROP TABLE IF EXISTS core.{table} CASCADE;')
+        # conn.commit()
+        # logger.info("Dropped table core.%s if it existed", table)
+
 
         create_chema(schema)
-        create_table(schema)
+        create_table(schema,table)
 
-        table_ids = get_video_ids(cur,schema)
+        table_ids = get_video_ids(cur,schema,table)
 
         current_video_ids = set()
 
@@ -90,7 +114,6 @@ def core_table():
 
             else:
                 transformed_row = transform_data(row)
-
                 if transformed_row["Video_ID"] in table_ids:
                     update_rows(cur, conn, schema, transformed_row)
                 else:
@@ -100,7 +123,6 @@ def core_table():
 
         if ids_to_delete:
             delete_rows(cur, conn, schema, ids_to_delete)
-
         logger.info(f"{schema} table update completed")
 
     except Exception as e:

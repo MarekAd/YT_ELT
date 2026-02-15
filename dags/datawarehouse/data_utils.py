@@ -1,10 +1,12 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from psycopg2.extras import RealDictCursor
 
+import logging
+logger = logging.getLogger(__name__)
 
 def get_conn_cursor():
         hook = PostgresHook(postgres_conn_id="postgres_db_yt_elt", database="elt_db")
-        conn = hook.get_con()
+        conn = hook.get_conn()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         return conn, cur
 
@@ -30,24 +32,25 @@ def create_table(schema, table):
     conn, cur = get_conn_cursor()
 
     if schema == 'staging':
-            table_sql = f"""
-                CREATE TABLE IF NOT EXISTS {schema}.{table}(
-                    "Video_ID" VARCHAR(11) PRIMARY KEY NOT NULL,
-                    "Video_Title" TEXT NOT NULL,
-                    "Upload_Date" TIMESTAMP NOT NULL,
-                    "Duration" VARCHAR(20) NOT NULL,
-                    "Video_Views" INT,
-                    "Likes_Count" INT,
-                    "Comments_Count" INT
-                );
-            """
+        
+        table_sql = f"""
+            CREATE TABLE IF NOT EXISTS {schema}.{table}(
+                "Video_ID" VARCHAR(11) PRIMARY KEY NOT NULL,
+                "Video_Title" TEXT NOT NULL,
+                "Upload_Date" TIMESTAMP NOT NULL,
+                "Duration" VARCHAR(20) NOT NULL,
+                "Video_Views" INT,
+                "Likes_Count" INT,
+                "Comments_Count" INT
+            );
+        """
     else:
         table_sql = f"""                
             CREATE TABLE IF NOT EXISTS {schema}.{table} (
                 "Video_ID" VARCHAR(11) PRIMARY KEY NOT NULL,
                 "Video_Title" TEXT NOT NULL,
                 "Upload_Date" TIMESTAMP NOT NULL,
-                "Duration" TIME NOT NULL,
+                "Duration" INTERVAL NOT NULL,
                 "Video_Type" VARCHAR(10) NOT NULL,
                 "Video_Views" INT,
                 "Likes_Count" INT,
